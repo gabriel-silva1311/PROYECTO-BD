@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-4">Armado de Pedido (Lógica en Python)</h2>
+
+  {% if error %}
+  <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+
+  <div class="row g-4">
+    <!-- Constructor de ítem -->
+    <div class="col-md-7">
+      <div class="card shadow-sm">
+        <div class="card-body">
+
+          <!-- Paso 1: Elegir formato (envía a Python para saber el máximo de sabores) -->
+          <form action="{{ url_for('pedido.seleccionar_formato') }}" method="POST" class="mb-4">
+            <label for="formato_id" class="form-label fw-bold">1. Elige el formato</label>
+            <select name="formato_id" id="formato_id" class="form-select" onchange="this.form.submit()">
+              <option value="">-- Selecciona un formato --</option>
+              {% for f in formatos %}
+              <option value="{{ f._id }}"
+                {% if formato_actual and (formato_actual._id|string) == (f._id|string) %}selected{% endif %}>
+                {{ f.nombre }} — Bs {{ "%.2f"|format(f.precio) }} (Máx. {{ f.max_sabores }} sabor(es))
+              </option>
+              {% endfor %}
+            </select>
+          </form>
+
+          <!-- Paso 2 y 3: Sabores, toppings y agregar ítem en Python -->
+          <form action="{{ url_for('pedido.agregar_item') }}" method="POST">
+            <input type="hidden" name="formato_id" value="{{ formato_actual._id if formato_actual else '' }}">
+
+            <div class="mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="form-label fw-bold mb-0">2. Elige los sabores</label>
+                {% if formato_actual %}
+                  <span class="badge bg-primary">Máximo {{ formato_actual.max_sabores }} sabor(es)</span>
+                {% else %}
+                  <span class="badge bg-secondary">Elige un formato primero</span>
+                {% endif %}
+              </div>
+
+              <div class="row g-2">
+                {% for s in sabores %}
+                <div class="col-6 col-sm-4">
+                  <div class="form-check border rounded p-2">
+                    <input class="form-check-input" type="checkbox" name="sabores_ids"
+                           value="{{ s._id }}" id="sab_{{ s._id }}"
+                           {% if not formato_actual %}disabled{% endif %}>
+                    <label class="form-check-label w-100" for="sab_{{ s._id }}">
+                      {{ s.nombre }}
+                    </label>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label fw-bold">3. Toppings opcionales</label>
+              <div class="row g-2">
+                {% for t in toppings %}
+                <div class="col-6">
+                  <div class="form-check border rounded p-2">
+                    <input class="form-check-input" type="checkbox" name="toppings_ids"
+                           value="{{ t._id }}" id="top_{{ t._id }}">
+                    <label class="form-check-label w-100" for="top_{{ t._id }}">
+                      {{ t.nombre }} (+Bs {{ "%.2f"|format(t.precio) }})
+                    </label>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100" {% if not formato_actual %}disabled{% endif %}>
+              + Agregar ítem al pedido
+            </button>
+          </form>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumen del pedido (calculado en Python) -->
+    <div class="col-md-5">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Ítems del Pedido</h5>
+
+          {% if items %}
+          <ul class="list-group mb-3">
+            {% for item in items %}
+            <li class="list-group-item d-flex justify-content-between align-items-start">
+              <div>
+                <strong>{{ item.formato_nombre }}</strong> — Bs {{ "%.2f"|format(item.subtotal) }}<br>
+                <small class="text-muted">Sabores: {{ item.sabores_nombres | join(", ") }}</small>
+                {% if item.toppings_nombres %}
+                <br><small class="text-info">Toppings: {{ item.toppings_nombres | join(", ") }}</small>
+                {% endif %}
+              </div>
+              <form action="{{ url_for('pedido.quitar_item', indice=loop.index0) }}" method="POST">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Quitar</button>
+              </form>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="text-muted text-center py-3">Aún no hay ítems en el pedido.</p>
+          {% endif %}
+
+          <div class="d-flex justify-content-between align-items-center fs-4 fw-bold border-top pt-3">
+            <span>TOTAL:</span>
+            <span class="text-success">Bs {{ "%.2f"|format(total) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
