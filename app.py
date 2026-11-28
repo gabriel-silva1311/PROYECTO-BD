@@ -1,8 +1,10 @@
 from flask import Flask, render_template
-from rutas_pedido import pedido_bp
+#from rutas_pedido import pedido_bp
+from rutas_menu import menu_bp
 
 app = Flask(__name__)
-app.register_blueprint(pedido_bp)
+#app.register_blueprint(pedido_bp)
+app.register_blueprint(menu_bp)
 
 
 @app.route('/')
